@@ -102,7 +102,7 @@
     - Half Trust
     - Zero Trust
 
-## gRPC & 服务发现
+## gRPC & 服务发现🌟
 - gRPC： "A high-performance, open-source universal RPC framework"
     - 多语言：语言中立，支持多种语言（C、`Go`、Java...）。
     - 轻量级、高性能：序列化支持`Protocol Buffer`和`JSON`，PB是一种语言无关的高性能序列化框架。
@@ -147,4 +147,13 @@
         - Server streaming RPCs
         - Client streaming RPCs
         - Bidirectional streaming RPCs
-## 多集群 && 多租户
+![image](./rpc-life-cycle.png)
+
+    - Others
+        - Deadlines/Timeouts：设置RPC的超时单位长度以及超时最后期限。
+        - RPC termination：RPC终止。
+        - Cancelling an RPC：取消之后RPC终止，但是取消之前的所有修改不会回滚。
+        - Metadata：具有RPC调用信息（认证细节...），形式是Key-Value Pair，不能用grpc-开头，二进制Key以-bin结尾，没有ASCII值的Key。
+        - Channels：一个gRPC通道提供一个与指定Host、Port上的RPC服务器的连接。在创建Client-Stub时使用。通过指定Channel参数修改gRPC默认行为（消息压缩的O/C），查询Channel的状态（Connect、Idel）。
+
+## 多集群 && 多租户🌟
