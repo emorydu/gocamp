@@ -71,27 +71,27 @@
     - 动态升级：原有系统兼容升级，更新服务而非协议（主要微服务API兼容，就可达到）
     - 沟通效率提升，协作模式演进为移动业务+网关小组
     - BFF
-![image](./bff.png)
+      ![image](./bff.png)
         - 理解为适配服务（adapter-service），将后端的微服务进行适配（主要聚合裁剪和格式适配等逻辑），向无线端设备暴露友好统一的API，便于设备接入访问后端服务。
     - api-interface属于single point of failure，严重代码缺陷或者流量洪峰可能引发集群宕机。
     - 单个模块也会导致后续业务集成复杂度高，据康威法则，单块BFF和多团队之间出现不匹配问题，团队沟通成本高，交付效率低。（按照功能拆分多个BFF）
     - 许多跨横切面逻辑，例如安全认证、日志监控、限流熔断等。随着时间推移，代码复杂度增加、技术栈堆积多。
     - 解决方案
-![image](./multi-bff.png)
+    ![image](./multi-bff.png)
     - Cross-Cutting Concerns跨横切面的功能，需要协调更新框架升级发版（路由、认证、限流、安全），全部上沉，引入`API Gateway`，将业务集成度高的BFF层和通用功能服务层`API Gateway`进行分层处理。
     - `API Gateway`是解耦拆分和后续升级迁移的利器，在`Gateway`的配合下，单块BFF实现了解耦拆分，业务线团队可以独立开发和交付各自的微服务。BFF开发人员可以专注业务逻辑交付，实现了架构上的关注分离。
     - Point -> API Gateway -> BFF(Node用于服务端渲染SSR，Service-Side Rendering，忽略了CDN、4/7层负载均衡ELB) -> Microservices
-![image](./api-gateway.png) 
+    ![image](./api-gateway.png) 
 - Microservices划分
     - 通过业务职能划分（Business Capability）
         - 公司内部不同部门提供的职能。例如客户服务、财务服务...
     - DDD的限界上下文（Bounded Context）
         - 解决不同业务问题的问题域和对应解决方案域，为了解决`某种类型`的业务问题，贴近领域知识进行划分。
-![image](./business&bounde.png)
+        ![image](./business&bounde.png)
     - CQRS：将Application分为两部分（命令端和查询端）
         - 命令端处理程序创建、更新、删除请求，并在数据更改时发出事件。
         - 查询端通过针对一个或多个物化视图执行查询来处理查询，这些物化视图通过订阅数据更改时发出事件流而保持最新。
-![image](./cqrs.png)
+        ![image](./cqrs.png)
 
 - Microservices安全
     - 对于外网的请求，通常在API Gateway进行统一的认证拦截，一旦认证成功，会使用Header方式通过RPC元数据传递的方式带到BFF层，BFF获取后将身份信息注入到应用的Context中，BFF到其他下层的微服务，建议直接在RPC Request中带入用户身份信息（UID）请求服务。
@@ -102,10 +102,49 @@
     - Half Trust
     - Zero Trust
 
-
-
-
-
-    
 ## gRPC & 服务发现
+- gRPC： "A high-performance, open-source universal RPC framework"
+    - 多语言：语言中立，支持多种语言（C、`Go`、Java...）。
+    - 轻量级、高性能：序列化支持`Protocol Buffer`和`JSON`，PB是一种语言无关的高性能序列化框架。
+    - 可插拔：支持扩展插件。
+    - IDL：基于`pb文件定义服务`，通过`proto3工具生成指定语言的数据结构、服务端接口以及客户端Stub`。
+    - 设计理念
+    - 移动端：基于标准的HTTP/2设计，支持双向流、消息头压缩、单TCP的多路复用、服务端推送等特性，这些特性使得gRPC在移动端设备上省电和节省网络流量。
+    - 服务而非对象、消息而非引用：促进微服务的系统间粗粒度消息交互设计理念。
+    - 负载无关：不同服务需要使用不同的消息类型和编码，例如protocol buffers、JSON、XML、Thrift。
+    - 流：Streaming API。
+    - `阻塞式和非阻塞式`：支持`异步`和`同步` `处理`在客户端和服务端间`交互的消息序列`。
+    - 元数据交换：常见的横切关注点，认证、跟踪...，依赖数据交换。
+    - 标准化状态码：客户端通常以有限的方式响应API调用返回的错误。 
+    - HealthCheck：gRPC具有标准的健康检测协议，在gRPC的所有语言实现中基本都提供了生成和用于设置运行状态的功能。
+    - 主动health check，可以在服务提供者服务不稳定时，被消费者所感知，临时从负载均衡中拆除，减少错误请求。当服务提供者重新稳定后，health check成功，重新加入到消费者的负载均衡；恢复请求。health check，同样也被用于外挂方式的容器健康检测，或者流量检测（k8s liveness & readiness）。
+    - // TODO：
+    - 服务方法
+        - Unary RPCs
+        ```proto
+        rpc SayHello(HelloRequest) returns (HelloResponse);
+        ```
+        - Server streaming RPCs
+        ```proto
+        rpc SayHello(HelloRequest) returns (stream HelloResponse);
+        ```
+        - Client streaming RPCs
+         ```proto
+        rpc SayHello(stream HelloRequest) returns (HelloResponse);
+         ```
+        - Bidirectional streaming RPCs
+         ```proto
+        rpc SayHello(stream HelloRequest) returns (stream HelloResponse);
+         ```
+    - 使用&原理
+        - 从.proto文件中的服务定义开始，gRPC提供了生成客户端和服务端代码的协议缓冲区编译器插件。gRPC用户通常在客户端调用这些API，并在服务器端实现相应的API。
+        - 在`服务器端`，实现服务所声明的方法，并运行gRPC服务器来处理客户端调用。gRPC基础设施对进入的请求进行解码，执行服务方法，并对服务响应进行编码。
+        - 在`客户端`，客户端具有一个叫做存根（Stub）的本地对象，实现了与服务器端相同的方法，然后，Client就可以在Stub上调用这些方法，这些方法将调用参数包裹在适当的协议缓冲区消息类型中，将请求发送到服务器，并返回服务器的协议缓冲区响应。
+
+    - 同步&异步：同步RPC阻塞，直到服务器的响应到达；网络本身是异步的，能够在不阻塞当前线程的情况下启动RPC是有用的。
+    - 生命周期
+        - Unary RPCs
+        - Server streaming RPCs
+        - Client streaming RPCs
+        - Bidirectional streaming RPCs
 ## 多集群 && 多租户
