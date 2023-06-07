@@ -102,7 +102,7 @@
     - Half Trust
     - Zero Trust
 
-## gRPC & 服务发现🌟
+## gRPC & [服务发现](https://www.infoq.cn/article/lknumimtzy08qxqckqma)🌟
 - gRPC： "A high-performance, open-source universal RPC framework"
     - 多语言：语言中立，支持多种语言（C、`Go`、Java...）。
     - 轻量级、高性能：序列化支持`Protocol Buffer`和`JSON`，PB是一种语言无关的高性能序列化框架。
@@ -155,5 +155,15 @@
         - Cancelling an RPC：取消之后RPC终止，但是取消之前的所有修改不会回滚。
         - Metadata：具有RPC调用信息（认证细节...），形式是Key-Value Pair，不能用grpc-开头，二进制Key以-bin结尾，没有ASCII值的Key。
         - Channels：一个gRPC通道提供一个与指定Host、Port上的RPC服务器的连接。在创建Client-Stub时使用。通过指定Channel参数修改gRPC默认行为（消息压缩的O/C），查询Channel的状态（Connect、Idel）。
+
+- Service Discovery
+    - 在微服务中，服务节点的扩缩容、服务版本的迭代是常态，消费者需要能快速及时感知服务节点的变更（Address、Node Number）；服务节点是否可用。（分布式）。
+    - 客户端服务发现：
+![image](./client-discovery.png)
+    - 服务端服务发现：
+![image](./server-discovery.png)
+    - 服务端服务发现（客户端通过负载均衡器向一个服务发送请求，通过负载均衡器查询服务注册表，将请求路由到可用服务实例上。服务实例在服务注册表上被注册和注销[Consul Template+Nginx, Kubernetes+etcd]）
+
+
 
 ## 多集群 && 多租户🌟
